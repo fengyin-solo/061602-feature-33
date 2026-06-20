@@ -7,6 +7,7 @@ import NestScene from './NestScene.vue'
 import WeatherOverlay from './WeatherOverlay.vue'
 import BirdCard from './BirdCard.vue'
 import EventModal from './EventModal.vue'
+import MilestoneModal from './MilestoneModal.vue'
 import { WEATHER_COLORS } from '@/utils/constants'
 
 const router = useRouter()
@@ -14,6 +15,7 @@ const {
   state, allAdults, aliveCount,
   collectBerry, feedBird, calmBird, buryBird,
   releaseBirds, keepAndBreed, returnToStart, tryLoadGame,
+  dismissMilestoneModal,
 } = useGameState()
 
 onMounted(() => {
@@ -115,8 +117,17 @@ const handleCollect = (id: string) => {
           孵化 {{ state.totalHatched }}
           <span class="mx-1 text-white/30">|</span>
           离世 {{ state.totalDied }}
+          <span v-if="state.unlockedMilestones.length > 0" class="mx-1 text-white/30">|</span>
+          <span v-if="state.unlockedMilestones.length > 0">
+            <span>🏆</span> 成就 {{ state.unlockedMilestones.length }}
+          </span>
         </div>
       </div>
     </div>
+
+    <MilestoneModal
+      :milestone-id="state.pendingMilestoneModal"
+      @close="dismissMilestoneModal"
+    />
   </div>
 </template>

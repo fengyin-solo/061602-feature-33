@@ -1,5 +1,5 @@
 import { reactive, computed, watch } from 'vue'
-import type { GameState, Bird, Berry, GrowthStage, Personality, BerryType, Weather, GameScore } from '@/types/game'
+import type { GameState, Bird, Berry, GrowthStage, Personality, BerryType, Weather, GameScore, MilestoneType, UnlockedMilestone } from '@/types/game'
 import {
   ATTR_MIN, ATTR_MAX, DEATH_THRESHOLD,
   STAGE_DURATION, FOOD_NEED_MULTIPLIER,
@@ -7,7 +7,7 @@ import {
   BERRY_SPAWN_INTERVAL, BERRY_MAX_COUNT, BERRY_LIFETIME,
   BERRY_VALUES, WEATHER_CHANGE_INTERVAL, WEATHER_EFFECTS,
   DAY_DURATION, INITIAL_FOOD, MIN_EGGS, MAX_EGGS,
-  MAX_BREEDING_ROUNDS, BIRD_NAMES,
+  MAX_BREEDING_ROUNDS, BIRD_NAMES, MILESTONES,
 } from '@/utils/constants'
 import { randomInt, randomFloat, clamp, randomChoice, generateId, chance } from '@/utils/random'
 import { saveGame, loadGame, clearSave } from '@/utils/storage'
@@ -26,6 +26,10 @@ const createInitialState = (): GameState => ({
   breedingCount: 0,
   maxBreedingRounds: MAX_BREEDING_ROUNDS,
   eventLog: [],
+  unlockedMilestones: [],
+  pendingMilestoneModal: null,
+  goldenBerryCollected: 0,
+  noDeathDayStart: 1,
 })
 
 const state = reactive<GameState>(createInitialState())
@@ -39,6 +43,110 @@ const BERRY_TYPES: BerryType[] = ['red', 'red', 'red', 'blue', 'blue', 'golden']
 const GROWTH_ORDER: GrowthStage[] = ['egg', 'chick', 'juvenile', 'subadult', 'adult']
 
 const usedNames = new Set<string>()
+
+const isMilestoneUnlocked = (id: MilestoneType): boolean => {
+  return state.unlockedMilestones.some(m => m.id === id)
+}
+
+const unlockMilestone = (id: MilestoneType) => {
+  if (isMilestoneUnlocked(id)) return
+
+  const milestone = MILESTONES[id]
+  if (!milestone) return
+
+  const unlocked: UnlockedMilestone = {
+    id,
+    unlockedAt: Date.now(),
+    rewardClaimed: true,
+  }
+  state.unlockedMilestones.push(unlocked)
+
+  if (milestone.reward.foodBonus) {
+    state.foodStock += milestone.reward.foodBonus
+  }
+
+  state.pendingMilestoneModal = id
+
+  addEventLog(
+    `🏆 成就达成【${milestone.name}】${milestone.reward.foodBonus ? ` +${milestone.reward.foodBonus}食物` : ''} +${milestone.reward.scoreBonus}分`,
+    'success'
+  )
+}
+
+const checkMilestones = (context: { afterHatch?: boolean; afterGrow?: boolean; afterCollect?: BerryType | null; afterBreed?: boolean; afterDayChange?: boolean } = {}) => {
+  const aliveBirds = state.birds.filter(b => !b.isDead)
+
+  if (context.afterHatch) {
+    if (state.totalHatched === 1) {
+      unlockMilestone('first_hatch')
+    }
+    const eggsRemaining = state.birds.filter(b => b.stage === 'egg').length
+    if (eggsRemaining === 0 && state.totalHatched > 0) {
+      unlockMilestone('all_hatched')
+    }
+  }
+
+  if (context.afterGrow) {
+    const chicks = aliveBirds.filter(b => b.stage === 'chick').length
+    const juveniles = aliveBirds.filter(b => b.stage === 'juvenile').length
+    const subadults = aliveBirds.filter(b => b.stage === 'subadult').length
+    const adults = aliveBirds.filter(b => b.stage === 'adult').length
+    const noEggOrChick = aliveBirds.every(b => b.stage !== 'egg' && b.stage !== 'chick')
+    const noEggOrJuvenile = aliveBirds.every(b => b.stage !== 'egg' && b.stage !== 'juvenile')
+    const allAdult = aliveBirds.length > 0 && aliveBirds.every(b => b.stage === 'adult')
+
+    if (juveniles >= 1 && !isMilestoneUnlocked('first_chick_to_juvenile')) {
+      unlockMilestone('first_chick_to_juvenile')
+    }
+    if (noEggOrChick && juveniles >= 1 && !isMilestoneUnlocked('all_chick_to_juvenile')) {
+      unlockMilestone('all_chick_to_juvenile')
+    }
+    if (subadults >= 1 && !isMilestoneUnlocked('first_juvenile_to_subadult')) {
+      unlockMilestone('first_juvenile_to_subadult')
+    }
+    if (noEggOrJuvenile && subadults >= 1 && !isMilestoneUnlocked('all_juvenile_to_subadult')) {
+      unlockMilestone('all_juvenile_to_subadult')
+    }
+    if (adults >= 1 && !isMilestoneUnlocked('first_subadult_to_adult')) {
+      unlockMilestone('first_subadult_to_adult')
+    }
+    if (allAdult && !isMilestoneUnlocked('all_adult')) {
+      unlockMilestone('all_adult')
+    }
+    if (aliveBirds.length > 0 && aliveBirds.every(b => b.health >= 80)) {
+      unlockMilestone('perfect_care')
+    }
+  }
+
+  if (context.afterCollect === 'golden') {
+    if (state.goldenBerryCollected >= 5) {
+      unlockMilestone('golden_berry_collector_5')
+    }
+  }
+
+  if (context.afterBreed) {
+    if (state.breedingCount === 1) {
+      unlockMilestone('first_breeding')
+    }
+    if (state.breedingCount === 2) {
+      unlockMilestone('second_breeding')
+    }
+  }
+
+  if (context.afterDayChange) {
+    if (state.totalDied === 0 && state.day - state.noDeathDayStart >= 5) {
+      unlockMilestone('no_death_5_days')
+    }
+  }
+
+  if (aliveBirds.length > 0 && aliveBirds.every(b => b.health >= 80) && !isMilestoneUnlocked('perfect_care')) {
+    unlockMilestone('perfect_care')
+  }
+}
+
+const dismissMilestoneModal = () => {
+  state.pendingMilestoneModal = null
+}
 
 const pickName = (): string => {
   const available = BIRD_NAMES.filter(n => !usedNames.has(n))
@@ -137,6 +245,7 @@ const updateGame = (deltaMs: number) => {
     state.dayProgress -= 1
     state.day += 1
     addEventLog(`📅 第 ${state.day} 天开始了！`, 'info')
+    checkMilestones({ afterDayChange: true })
   }
 
   if (Date.now() >= state.nextWeatherChangeAt) {
@@ -252,6 +361,7 @@ const hatchBird = (bird: Bird) => {
   state.totalHatched++
 
   addEventLog(`🥳 ${bird.name} 破壳啦！性格：${bird.personality}`, 'success')
+  checkMilestones({ afterHatch: true })
 }
 
 const growBird = (bird: Bird) => {
@@ -263,6 +373,7 @@ const growBird = (bird: Bird) => {
   bird.justGrew = true
 
   addEventLog(`🌟 ${bird.name} 成长为${bird.stage}啦！`, 'success')
+  checkMilestones({ afterGrow: true })
 
   if (bird.stage === 'adult') {
     checkAllAdult()
@@ -272,6 +383,7 @@ const growBird = (bird: Bird) => {
 const killBird = (bird: Bird) => {
   bird.isDead = true
   state.totalDied++
+  state.noDeathDayStart = state.day
   addEventLog(`💔 ${bird.name} 离开了我们...`, 'danger')
 
   state.birds.filter(b => !b.isDead && b.stage !== 'egg').forEach(survivor => {
@@ -329,6 +441,12 @@ const collectBerry = (berryId: string) => {
   const berry = state.berries[idx]
   state.foodStock += berry.value
   state.berries.splice(idx, 1)
+
+  if (berry.type === 'golden') {
+    state.goldenBerryCollected++
+    checkMilestones({ afterCollect: 'golden' })
+  }
+
   return berry.value
 }
 
@@ -398,6 +516,7 @@ const keepAndBreed = () => {
   }
 
   addEventLog(`💝 成鸟们产下了 ${newEggCount} 颗新蛋！第 ${state.breedingCount} 窝`, 'success')
+  checkMilestones({ afterBreed: true })
   state.phase = 'playing'
 }
 
@@ -422,11 +541,26 @@ const calculateScore = (): GameScore => {
     ? aliveBirds.reduce((s, b) => s + (b.feedingCount > 10 ? 5 : 2), 0)
     : 0
 
+  const milestoneBonus = state.unlockedMilestones.reduce((sum, um) => {
+    const m = MILESTONES[um.id]
+    return sum + (m?.reward.scoreBonus ?? 0)
+  }, 0)
+
+  const unlockedHonors = state.unlockedMilestones.map(um => {
+    const m = MILESTONES[um.id]
+    return {
+      badge: m?.reward.honorBadge ?? '🏅',
+      title: m?.reward.honorTitle ?? '成就达成',
+      milestoneId: um.id,
+    }
+  })
+
   const totalScore = Math.round(
     survivalRate * 40 +
     avgHealth * 0.3 +
     breedingBonus +
-    personalityBonus
+    personalityBonus +
+    milestoneBonus
   )
 
   let stars = 1
@@ -447,8 +581,10 @@ const calculateScore = (): GameScore => {
     avgHealth: Math.round(avgHealth),
     breedingBonus,
     personalityBonus,
+    milestoneBonus,
     stars,
     rank,
+    unlockedHonors,
   }
 }
 
@@ -506,5 +642,7 @@ export function useGameState() {
     tryLoadGame,
     allAdults,
     aliveCount,
+    dismissMilestoneModal,
+    isMilestoneUnlocked,
   }
 }

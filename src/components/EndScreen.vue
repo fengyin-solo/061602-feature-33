@@ -67,7 +67,7 @@ const handleHome = () => {
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4 mb-8">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
           <div class="bg-white/5 rounded-2xl p-4 text-center border border-white/10">
             <div class="text-3xl mb-2">💚</div>
             <div class="text-white/60 text-xs mb-1">成活率</div>
@@ -90,6 +90,34 @@ const handleHome = () => {
             <div class="text-3xl mb-2">🌟</div>
             <div class="text-white/60 text-xs mb-1">照料加成</div>
             <div class="font-bold text-2xl text-amber-400">+{{ score.personalityBonus }}</div>
+          </div>
+
+          <div class="bg-gradient-to-br from-amber-500/15 to-yellow-500/15 rounded-2xl p-4 text-center border border-amber-400/30 sm:col-span-2">
+            <div class="text-3xl mb-2">🏆</div>
+            <div class="text-amber-300/80 text-xs mb-1">里程碑加成</div>
+            <div class="font-bold text-2xl text-yellow-400">+{{ score.milestoneBonus }}</div>
+            <div class="text-amber-200/60 text-[10px] mt-1">{{ score.unlockedHonors.length }} 个成就达成</div>
+          </div>
+        </div>
+
+        <div v-if="score.unlockedHonors.length > 0" class="mb-8 animate-pop-in" style="animation-delay: 0.25s">
+          <div class="bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-orange-500/10 rounded-2xl p-5 border border-amber-400/20">
+            <div class="text-center mb-4 flex items-center justify-center gap-2">
+              <span>🎖️</span>
+              <span class="font-bold text-amber-300">荣誉殿堂</span>
+              <span>🎖️</span>
+            </div>
+            <div class="flex flex-wrap justify-center gap-2">
+              <div
+                v-for="(honor, idx) in score.unlockedHonors"
+                :key="honor.milestoneId"
+                class="flex items-center gap-1.5 px-3 py-2 bg-white/10 rounded-xl border border-amber-400/20 animate-pop-in"
+                :style="{ animationDelay: `${0.3 + idx * 0.05}s` }"
+              >
+                <span class="text-lg">{{ honor.badge }}</span>
+                <span class="text-amber-200 text-xs font-medium">{{ honor.title }}</span>
+              </div>
+            </div>
           </div>
         </div>
 

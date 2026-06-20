@@ -1,4 +1,4 @@
-import type { Weather, WeatherEffect, BerryType, GrowthStage, Personality } from '@/types/game'
+import type { Weather, WeatherEffect, BerryType, GrowthStage, Personality, Milestone } from '@/types/game'
 
 export const ATTR_MIN = 0
 export const ATTR_MAX = 100
@@ -110,3 +110,107 @@ export const BIRD_NAMES = [
   '糖糖', '圆圆', '小米', '小麦', '云朵', '星星', '月亮', '太阳',
   '小橘', '小蓝', '小绿', '小红', '阿黄', '阿白', '阿黑', '阿灰',
 ]
+
+export const MILESTONES: Record<string, Milestone> = {
+  first_hatch: {
+    id: 'first_hatch',
+    name: '生命初啼',
+    description: '第一只小鸟成功破壳而出',
+    emoji: '🐣',
+    stage: 'chick',
+    reward: { foodBonus: 20, scoreBonus: 8, honorBadge: '🥇', honorTitle: '初生喜悦' },
+  },
+  all_hatched: {
+    id: 'all_hatched',
+    name: '全员苏醒',
+    description: '整窝蛋全部成功孵化',
+    emoji: '🎉',
+    stage: 'chick',
+    reward: { foodBonus: 30, scoreBonus: 12, honorBadge: '🏅', honorTitle: '圆满孵化' },
+  },
+  first_chick_to_juvenile: {
+    id: 'first_chick_to_juvenile',
+    name: '羽翼渐丰',
+    description: '第一只雏鸟成长为幼鸟',
+    emoji: '🐥',
+    stage: 'juvenile',
+    reward: { foodBonus: 15, scoreBonus: 10, honorBadge: '🎖️', honorTitle: '初次蜕变' },
+  },
+  all_chick_to_juvenile: {
+    id: 'all_chick_to_juvenile',
+    name: '幼鸟集结',
+    description: '所有雏鸟都成长为幼鸟',
+    emoji: '🌟',
+    stage: 'juvenile',
+    reward: { foodBonus: 25, scoreBonus: 15, honorBadge: '🏆', honorTitle: '整窝蜕变' },
+  },
+  first_juvenile_to_subadult: {
+    id: 'first_juvenile_to_subadult',
+    name: '少年初成',
+    description: '第一只幼鸟成长为亚成鸟',
+    emoji: '🦜',
+    stage: 'subadult',
+    reward: { foodBonus: 20, scoreBonus: 12, honorBadge: '🎗️', honorTitle: '青春绽放' },
+  },
+  all_juvenile_to_subadult: {
+    id: 'all_juvenile_to_subadult',
+    name: '风华正茂',
+    description: '所有幼鸟都成长为亚成鸟',
+    emoji: '✨',
+    stage: 'subadult',
+    reward: { foodBonus: 35, scoreBonus: 18, honorBadge: '🏵️', honorTitle: '全员少年' },
+  },
+  first_subadult_to_adult: {
+    id: 'first_subadult_to_adult',
+    name: '展翅高飞',
+    description: '第一只亚成鸟成长为成鸟',
+    emoji: '🐦',
+    stage: 'adult',
+    reward: { foodBonus: 25, scoreBonus: 15, honorBadge: '🎀', honorTitle: '首次成年' },
+  },
+  all_adult: {
+    id: 'all_adult',
+    name: '圆满成年',
+    description: '所有小鸟都顺利长成成鸟',
+    emoji: '🏆',
+    stage: 'adult',
+    reward: { foodBonus: 50, scoreBonus: 25, honorBadge: '👑', honorTitle: '完美成长' },
+  },
+  first_breeding: {
+    id: 'first_breeding',
+    name: '生命延续',
+    description: '成鸟们产下第一窝新蛋',
+    emoji: '💝',
+    reward: { foodBonus: 40, scoreBonus: 20, honorBadge: '💕', honorTitle: '繁衍不息' },
+  },
+  second_breeding: {
+    id: 'second_breeding',
+    name: '家族兴旺',
+    description: '成鸟们产下第二窝新蛋',
+    emoji: '💐',
+    reward: { foodBonus: 60, scoreBonus: 30, honorBadge: '💎', honorTitle: '人丁兴旺' },
+  },
+  no_death_5_days: {
+    id: 'no_death_5_days',
+    name: '守护天使',
+    description: '连续5天没有小鸟离世',
+    emoji: '🛡️',
+    reward: { foodBonus: 30, scoreBonus: 20, honorBadge: '🔰', honorTitle: '生命守护者' },
+  },
+  golden_berry_collector_5: {
+    id: 'golden_berry_collector_5',
+    name: '金色收藏家',
+    description: '累计收集5颗金色浆果',
+    emoji: '✨',
+    reward: { foodBonus: 25, scoreBonus: 15, honorBadge: '🌟', honorTitle: '金光闪耀' },
+  },
+  perfect_care: {
+    id: 'perfect_care',
+    name: '完美照料',
+    description: '所有存活小鸟的健康值都在80以上',
+    emoji: '💚',
+    reward: { foodBonus: 35, scoreBonus: 22, honorBadge: '💯', honorTitle: '最佳保姆' },
+  },
+}
+
+export const MILESTONE_LIST: Milestone[] = Object.values(MILESTONES)
